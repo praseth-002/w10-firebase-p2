@@ -82,6 +82,35 @@ class LibraryViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void refresh() async {
+    data = AsyncValue.loading();
+    notifyListeners();
+
+    try {
+      List<Song> songs = await songRepository.fetchSongs(forceFetch: true);
+      List<Artist> artists = await artistRepository.fetchArtists(
+        forceFetch: true,
+      );
+
+      Map<String, Artist> mapArtist = {};
+      for (Artist artist in artists) {
+        mapArtist[artist.id] = artist;
+      }
+
+      List<LibraryItemData> newData = songs
+          .map(
+            (song) =>
+                LibraryItemData(song: song, artist: mapArtist[song.artistId]!),
+          )
+          .toList();
+
+      data = AsyncValue.success(newData);
+    } catch (e) {
+      data = AsyncValue.error(e);
+    }
+    notifyListeners();
+  }
+
   bool isSongPlaying(Song song) => playerState.currentSong == song;
 
   void start(Song song) => playerState.start(song);
